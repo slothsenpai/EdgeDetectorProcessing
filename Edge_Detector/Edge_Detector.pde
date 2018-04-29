@@ -15,10 +15,11 @@
 
 import java.util.Random;
 import java.util.Hashtable;
+import java.util.ArrayList;
 
 PImage img;
-String imgFileName = "file";
-String fileType = "type";
+String imgFileName = "kaiba";
+String fileType = "jpg";
 
 int loops = 1;
 
@@ -28,8 +29,9 @@ int column = 0;
 boolean saved = false;
 
 Hashtable<Integer, Integer> points = new Hashtable<Integer, Integer>();
+ArrayList<Integer> queue = new ArrayList<Integer>();
 
-int mode = 5;
+int mode = 1;
 
 void setup() {
   img = loadImage(imgFileName+"."+fileType);
@@ -55,7 +57,7 @@ void draw() {
       randomRed(img.width, img.height);
       break;
     case 1:
-      edges(img.width, img.height, 12);
+      edges(img.width, img.height, 13);
       break;
     case 2:
       filterRed(img.width, img.height);
@@ -68,6 +70,9 @@ void draw() {
       break;
     case 5:
       transparent(img.width, img.height);
+      break;
+    case 6:
+      sortBetweenEdges(img.width, img.height, 13);
       break;
   }
   img.updatePixels();
@@ -143,7 +148,7 @@ void edges(int _width, int _height, int thresh){
     
     int prevx = img.pixels[i-1];
     int curr = img.pixels[i];
-    int nextx = img.pixels[i];
+    int nextx = img.pixels[i+1];
     int nexty = img.pixels[(i+width)];
     double prevxAvg, prevyAvg, nextxAvg, nextyAvg, avgxDiff, avgyDiff;
     int threshold = thresh;
@@ -238,6 +243,76 @@ void transparent(int _width, int _height){
         img.pixels[i] = temp;
       }
     }
+}
+
+void sortBetweenEdges(int _width, int _height, int thresh){
+  for(int i = 1; i < (_width * _height) - _width; i++){
+    int prevx = img.pixels[i-1];
+    int curr = img.pixels[i];
+    int nextx = img.pixels[i+1];
+
+    double prevxAvg, prevyAvg, nextxAvg, nextyAvg, avgxDiff, avgyDiff;
+    int threshold = thresh;
+    
+     
+    if(i > width){
+      prevy = img.pixels[(i-width)];
+      prevyAvg = rgbAverage(prevy);
+    } else {
+      prevy = 0;
+      prevyAvg = 0.0;
+    }
+    
+    if(i % width == 0){
+      prevx = 0;
+      nextx = 0;
+      prevxAvg = 0.0;
+      nextxAvg = 0.0;
+    } else {
+      prevxAvg = rgbAverage(prevx);
+      nextxAvg = rgbAverage(nextx);
+    }
+    
+    // parse out each 8-bit value corresponding to RGB values, ignore alpha value which is bits 23 - 31
+    
+    nextyAvg = rgbAverage(nexty);
+    
+    avgxDiff = (-0.5 * prevxAvg) + (0.5 * nextxAvg);
+    avgyDiff = (-0.5 * prevyAvg) + (0.5 * nextyAvg);
+    
+    // If we find an edge, set the previous x pixel as a black pixel and add the pixel number to our hashtable of edge points
+    if(avgxDiff >= threshold){
+      //img.pixels[i-1] = 0xFF000000;
+      //points.put(i-1, 1);
+      queue.add(i-1);
+    }
+    if(avgyDiff >= threshold && i > width){
+      //img.pixels[i-width] = 0xFF000000;
+      //points.put(i-width, 1);
+    }
+  }
+  
+  int i = 0;
+  while(i < (_width * _height) - _width){
+    int currPoint = 0;
+    if(queue.size() > 0){
+      currPoint = queue.remove(0);
+    } else {
+      break;
+    }
+    
+    int index = 0;
+    color[] arr = new color[currPoint - i];
+    for(int j = i; j < currPoint; j++){
+      arr[index++] = img.pixels[j];
+    }
+    arr = sort(arr);
+    index = 0;
+    for(int j = i; j < currPoint; j++){
+      img.pixels[j] = arr[index++];
+    }
+    i = currPoint++;
+  }
 }
 
 int rgbAverage(int rgb){

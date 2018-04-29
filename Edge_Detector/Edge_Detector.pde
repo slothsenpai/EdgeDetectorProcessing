@@ -18,8 +18,8 @@ import java.util.Hashtable;
 import java.util.ArrayList;
 
 PImage img;
-String imgFileName = "kaiba";
-String fileType = "jpg";
+String imgFileName = "file";
+String fileType = "type";
 
 int loops = 1;
 
